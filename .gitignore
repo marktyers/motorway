@@ -1,0 +1,10 @@
+
+.codio
+node_modules/
+
+# directories used by TSC
+build/
+tmp/
+src/*.js
+
+.env

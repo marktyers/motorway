@@ -1,0 +1,78 @@
+name: pipeline
+
+on:
+  push:
+    branches: ['*']
+
+jobs:
+  specs:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+ 
+        env:
+          POSTGRES_PASSWORD: postgres
+
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v4
+
+    - name: Use NodeJS
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20.6
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Add Seed Data to Postgres
+      run: node scripts/seed.js
+      env:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DATABASE: postgres
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+
+    - name: build project
+      run: tsc --outDir build
+    - name: set environment variables
+      run: ./scripts/env_vars.sh
+    - name: install jest
+      run: npm install -g jest
+    - name: run jest tests
+      run: jest --forceExit --detectOpenHandles
+      env:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DATABASE: postgres
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+
+  linter:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out repository code
+      uses: actions/checkout@v4
+
+    - name: Use NodeJS
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20.6
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: run the linter
+      run: npm run linter
+
+    - name: build project
+      run: tsc --outDir build
